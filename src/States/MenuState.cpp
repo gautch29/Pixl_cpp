@@ -12,12 +12,26 @@ MenuState::MenuState() : background(nullptr) {}
 MenuState::~MenuState() {}
 
 void MenuState::onEnter(Game *game) {
+  printf("MenuState::onEnter\n");
   // Load background
-  background = game->getResourceManager()->loadTexture(
-      "assets/Backgrounds/Background 2.jpg");
+  background =
+      game->getResourceManager()->loadTexture("assets/Backgrounds/Menu/0.png");
+
+  if (!background)
+    printf("Failed to load Menu background\n");
 
   int screenWidth = game->getWidth();
   int screenHeight = game->getHeight();
+
+  // Create buttons
+  TTF_Font *font =
+      game->getResourceManager()->loadFont("assets/Fonts/Alien.ttf", 50);
+
+  if (!font)
+    printf("Failed to load Menu font\n");
+
+  int centerX = game->getWidth() / 2;
+  int centerY = game->getHeight() / 2;
 
   // Create menu buttons
   auto playButton =
@@ -75,6 +89,9 @@ void MenuState::render(SDL_Renderer *renderer, Game *game) {
 
   TTF_Font *font =
       game->getResourceManager()->loadFont("assets/Fonts/Alien.ttf", 32);
+
+  if (!font)
+    printf("Failed to load Menu font in render\n");
 
   for (auto &button : buttons) {
     bool hovered = button->contains(mouseX, mouseY);

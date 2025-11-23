@@ -4,7 +4,7 @@
 #include <SDL2/SDL_ttf.h>
 
 class Player;
-class Settings;
+struct Settings;
 
 class HUD {
 public:
@@ -15,10 +15,13 @@ public:
               int screenHeight);
 
 private:
-  void renderHealthBar(SDL_Renderer *renderer, Player *player, int x, int y,
-                       int width, int height, bool flipped);
+  void renderHealthBar(SDL_Renderer *renderer, float life, float maxLife, int x,
+                       int y, int width, int height, bool flipped);
   void renderStaminaBar(SDL_Renderer *renderer, Player *player, int x, int y,
                         int width, bool flipped);
   void renderTimer(SDL_Renderer *renderer, TTF_Font *font, int timeRemaining,
                    int centerX, int centerY);
+
+  float smoothLife1 = -1.0f;
+  float smoothLife2 = -1.0f;
 };

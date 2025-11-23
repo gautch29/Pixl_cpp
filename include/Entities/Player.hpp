@@ -6,7 +6,7 @@
 #include <memory>
 
 class ResourceManager;
-class Settings;
+struct Settings;
 struct PlayerInput;
 
 enum class PlayerMode {
@@ -14,7 +14,9 @@ enum class PlayerMode {
   RUN = 1,
   JUMP = 2,
   JUMPED = 3,
-  SIDE_JUMP = 4
+  SIDE_JUMP = 4,
+  ATTACK = 5,
+  DASH = 6
 };
 
 enum class Direction { LEFT, RIGHT };
@@ -38,6 +40,7 @@ public:
   Direction getDirection() const { return direction; }
   PlayerMode getMode() const { return mode; }
   SDL_Point getPosition() const { return {posX, posY}; }
+  bool getWantedAttack() const { return wantedAttack; }
 
   // Combat
   void takeDamage(float damage);
@@ -72,16 +75,28 @@ private:
   PlayerMode mode;
   PlayerMode wantedMode;
   bool wantedAttack;
+  bool wantedDash;
 
   float life;
   float stamina;
 
   Uint32 lastHitTime;
 
+  // Combat Juice
+  float knockbackX;
+  int stunTimer;
+
+  // Dash
+  int dashTimer;
+  const int DASH_DURATION = 15; // frames
+  const float DASH_SPEED = 25.0f;
+  const float DASH_COST = 20.0f;
+
   // Animations
   Animation standLeft, standRight;
   Animation runLeft, runRight;
   Animation jumpLeft, jumpRight;
+  Animation attackLeft, attackRight;
 
   Animation *currentAnimation;
 };

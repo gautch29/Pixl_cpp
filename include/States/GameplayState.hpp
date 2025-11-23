@@ -6,7 +6,8 @@
 
 class Player;
 class Character;
-class Settings;
+struct Settings;
+class HUD;
 
 class GameplayState : public GameState {
 public:
@@ -18,6 +19,7 @@ public:
   void render(SDL_Renderer *renderer, Game *game) override;
 
   void onEnter(Game *game) override;
+  void onExit(Game *game) override;
 
 private:
   void checkCollisions();
@@ -26,6 +28,7 @@ private:
   SDL_Texture *background;
   std::unique_ptr<Player> player1;
   std::unique_ptr<Player> player2;
+  std::unique_ptr<HUD> hud;
 
   Character *character1;
   Character *character2;
@@ -33,6 +36,10 @@ private:
 
   Uint32 startTime;
   Uint32 pausedTime;
+  Uint32 lastUpdateTime;
   bool lifeInitialized;
   bool finished;
+
+  float shakeTimer;
+  float shakeMagnitude;
 };

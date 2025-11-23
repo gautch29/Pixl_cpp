@@ -1,0 +1,4 @@
+Current path: "/Users/gauthierbaron/Documents/Pixl"
+Attempting to load characters...
+Loaded Deku successfully
+Loaded Slash successfully

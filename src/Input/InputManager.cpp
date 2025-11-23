@@ -87,10 +87,24 @@ bool InputManager::loadInputConfig(const std::string &filename) {
       continue;
 
     std::string key = line.substr(0, line.find(' '));
-    char value = line[line.length() - 1];
+    std::string value =
+        line.substr(equalPos + 2); // Get the value string (e.g., "SPACE")
 
-    // Convert char to SDL_Keycode
-    SDL_Keycode keycode = static_cast<SDL_Keycode>(value);
+    // Remove any trailing whitespace/newline from value
+    while (!value.empty() && (value.back() == '\r' || value.back() == '\n' ||
+                              value.back() == ' ')) {
+      value.pop_back();
+    }
+
+    // Convert string to SDL_Keycode
+    SDL_Keycode keycode = SDL_GetKeyFromName(value.c_str());
+    if (keycode == SDLK_UNKNOWN) {
+      // Fallback for single characters if GetKeyFromName fails or for simple
+      // chars
+      if (value.length() == 1) {
+        keycode = static_cast<SDL_Keycode>(value[0]);
+      }
+    }
 
     for (int i = 0; i < 6; i++) {
       std::string player1Key = "player1_" + std::string(controlNames[i]);

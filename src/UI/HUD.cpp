@@ -19,54 +19,65 @@ void HUD::render(SDL_Renderer *renderer, TTF_Font *font, Player *player1,
   int x7 = screenWidth * 1150 / 1920;
   int x8 = screenWidth * 1900 / 1920;
 
-  int y1 = screenHeight * 20 / 1080;
-  int y2 = screenHeight * 40 / 1080;
-  int y3 = screenHeight * 100 / 1080;
-  int y4 = screenHeight * 120 / 1080;
+  // Initialize smooth life if first frame
+  if (smoothLife1 < 0)
+    smoothLife1 = player1->getLife();
+  if (smoothLife2 < 0)
+    smoothLife2 = player2->getLife();
 
-  // Render health bars
-  renderHealthBar(renderer, player1, x1, y1, x2 - x1, y3 - y1, false);
-  renderHealthBar(renderer, player2, x7, y2, x8 - x7, y4 - y2, true);
+  // Smoothly interpolate life
+  float lerpSpeed = 0.1f;
+  smoothLife1 += (player1->getLife() - smoothLife1) * lerpSpeed;
+  smoothLife2 += (player2->getLife() - smoothLife2) * lerpSpeed;
 
-  // Render stamina bars
-  renderStaminaBar(renderer, player1, x1, y4, screenWidth * 760 / 1920 - x1,
+  // Render Health Bars
+  int barWidth = screenWidth * 0.4;
+  int barHeight = 30;
+  int margin = 20;
+
+  // Player 1 (Left)
+  renderHealthBar(renderer, smoothLife1, 100.0f, margin, margin, barWidth,
+                  barHeight, false);
+  renderStaminaBar(renderer, player1, margin, margin + barHeight + 5, barWidth,
                    false);
-  renderStaminaBar(renderer, player2, x7, y1, x8 - screenWidth * 1160 / 1920,
-                   true);
 
-  // Render timer background
-  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-  SDL_Point timerPoints[] = {
-      {x4, y1}, {x5 + (x6 - x5), y1}, {x5, y4}, {x3 + (x4 - x3), y4}};
-  SDL_RenderDrawLines(renderer, timerPoints, 4);
+  // Player 2 (Right)
+  renderHealthBar(renderer, smoothLife2, 100.0f,
+                  screenWidth - margin - barWidth, margin, barWidth, barHeight,
+                  true);
+  renderStaminaBar(renderer, player2, screenWidth - margin - barWidth,
+                   margin + barHeight + 5, barWidth, true);
 
-  // Render timer
-  renderTimer(renderer, font, timeRemaining, screenWidth / 2, (y1 + y4) / 2);
+  // Render Timer
+  renderTimer(renderer, font, timeRemaining, screenWidth / 2, margin + 15);
 }
 
-void HUD::renderHealthBar(SDL_Renderer *renderer, Player *player, int x, int y,
-                          int width, int height, bool flipped) {
-  float lifePercent = player->getLife() / 100.0f;
-  SDL_Color color = (player->getPosition().x < 960) ? SDL_Color{255, 0, 0, 255}
-                                                    : SDL_Color{0, 0, 255, 255};
+void HUD::renderHealthBar(SDL_Renderer *renderer, float life, float maxLife,
+                          int x, int y, int width, int height, bool flipped) {
+  // Background (Dark Red)
+  SDL_Rect bgRect = {x, y, width, height};
+  SDL_SetRenderDrawColor(renderer, 50, 0, 0, 255);
+  SDL_RenderFillRect(renderer, &bgRect);
 
-  // Fill health bar
-  SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-  int barWidth = static_cast<int>(width * lifePercent);
-  SDL_Rect healthRect;
+  // Foreground (Bright Red)
+  float healthPercentage = life / maxLife;
+  if (healthPercentage < 0)
+    healthPercentage = 0;
+  int healthWidth = static_cast<int>(width * healthPercentage);
 
+  SDL_Rect fgRect;
   if (flipped) {
-    healthRect = {x + width - barWidth, y, barWidth, height};
+    fgRect = {x + (width - healthWidth), y, healthWidth, height};
   } else {
-    healthRect = {x, y, barWidth, height};
+    fgRect = {x, y, healthWidth, height};
   }
 
-  SDL_RenderFillRect(renderer, &healthRect);
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  SDL_RenderFillRect(renderer, &fgRect);
 
-  // Draw border
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_Rect borderRect = {x, y, width, height};
-  SDL_RenderDrawRect(renderer, &borderRect);
+  // Border (White)
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+  SDL_RenderDrawRect(renderer, &bgRect);
 }
 
 void HUD::renderStaminaBar(SDL_Renderer *renderer, Player *player, int x, int y,

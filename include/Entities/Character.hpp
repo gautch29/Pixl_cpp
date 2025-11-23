@@ -21,6 +21,7 @@ public:
   float staminaHit;
 
   int delayHit;
+  int delayAttack;
   int delayStand;
   int delayRun;
   int delayJump;

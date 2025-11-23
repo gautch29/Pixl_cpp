@@ -5,6 +5,8 @@
 #include "Input/InputManager.hpp"
 #include "States/GameplayState.hpp"
 #include "UI/Button.hpp"
+#include <filesystem>
+#include <fstream>
 #include <memory>
 
 CharacterSelectState::CharacterSelectState()
@@ -12,28 +14,19 @@ CharacterSelectState::CharacterSelectState()
       player2Character(nullptr) {}
 
 CharacterSelectState::~CharacterSelectState() {
-  for (auto *character : availableCharacters) {
-    delete character;
-  }
+  // No need to delete characters as they are owned by Game
 }
 
 void CharacterSelectState::onEnter(Game *game) {
+  printf("CharacterSelectState::onEnter\n");
   background = game->getResourceManager()->loadTexture(
       "assets/Backgrounds/Settings/0.png");
 
-  // Load available characters
-  Character *deku = new Character();
-  if (deku->loadFromFile("assets/Characters/Deku/")) {
-    deku->profilePicture = game->getResourceManager()->loadTexture(
-        "assets/Characters/Deku/Deku Head.png");
-    availableCharacters.push_back(deku);
-  }
-
-  Character *duke = new Character();
-  if (duke->loadFromFile("assets/Characters/Slash/")) {
-    duke->profilePicture = game->getResourceManager()->loadTexture(
-        "assets/Characters/Slash/Slash Head.png");
-    availableCharacters.push_back(duke);
+  // Get available characters from Game
+  const auto &gameCharacters = game->getCharacters();
+  availableCharacters.clear();
+  for (const auto &character : gameCharacters) {
+    availableCharacters.push_back(character.get());
   }
 
   // Set default selections
@@ -56,9 +49,14 @@ void CharacterSelectState::onEnter(Game *game) {
   auto startButton = std::make_unique<Button>(
       screenWidth / 2 - 100, screenHeight - 90, 200, 90, "Fight!");
   startButton->setCallback([this, game]() {
+    printf("Fight button clicked\n");
     if (player1Character && player2Character) {
+      printf("Starting GameplayState with P1: %s, P2: %s\n",
+             player1Character->name.c_str(), player2Character->name.c_str());
       game->changeState(
           std::make_unique<GameplayState>(player1Character, player2Character));
+    } else {
+      printf("Cannot start: P1 or P2 character is null\n");
     }
   });
   buttons.push_back(std::move(startButton));

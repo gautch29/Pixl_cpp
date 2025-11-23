@@ -12,8 +12,8 @@
 
 GameplayState::GameplayState(Character *char1, Character *char2)
     : background(nullptr), character1(char1), character2(char2),
-      settings(nullptr), startTime(0), pausedTime(0), lifeInitialized(false),
-      finished(false) {}
+      settings(nullptr), startTime(0), pausedTime(0), lastUpdateTime(0),
+      lifeInitialized(false), finished(false) {}
 
 GameplayState::~GameplayState() {}
 
@@ -27,37 +27,65 @@ void GameplayState::onEnter(Game *game) {
   } else {
     background = game->getResourceManager()->loadTexture(
         "assets/Backgrounds/Game/Background 1.JPG");
+
+    if (!background)
+      printf("Failed to load Game background\n");
   }
 
-  // Create players
-  SDL_Color redColor = {255, 0, 0, 255};
-  SDL_Color blueColor = {0, 0, 255, 255};
-
-  player1 = std::make_unique<Player>(1, redColor);
-  player2 = std::make_unique<Player>(2, blueColor);
-
-  int screenWidth = game->getWidth();
-  int playerSize = settings->playerSize;
-  int baseHeight = game->getHeight() * 9 / 10;
-
   // Initialize players
-  player1->initialize(character1, (screenWidth - playerSize) / 4, baseHeight,
+  printf("Initializing players...\n");
+  player1 = std::make_unique<Player>(1, (SDL_Color){255, 0, 0, 255});
+  player2 = std::make_unique<Player>(2, (SDL_Color){0, 0, 255, 255});
+
+  int groundHeight =
+      game->getHeight() - 100; // Ground is 100 pixels from bottom
+  int spawnY = groundHeight - settings->playerSize; // Spawn on ground
+
+  player1->initialize(character1, game->getWidth() / 4, spawnY,
                       game->getResourceManager(), settings);
-  player2->initialize(character2, (screenWidth - playerSize) * 3 / 4,
-                      baseHeight, game->getResourceManager(), settings);
+  player2->initialize(character2, game->getWidth() * 3 / 4, spawnY,
+                      game->getResourceManager(), settings);
+  printf("Players initialized\n");
 
   startTime = SDL_GetTicks();
   pausedTime = 0;
+  lastUpdateTime = SDL_GetTicks();
   lifeInitialized = false;
   finished = false;
+
+  // Player 2 attacking Player 1
+  if (player2->getWantedAttack() && player2->canAttack() &&
+      player2->getLife() > 0 && player1->getLife() > 0) {
+    SDL_Rect p1Hitbox = player1->getHitbox();
+    SDL_Rect p2Hitbox = player2->getHitbox();
+
+    SDL_Point p1Pos = player1->getPosition();
+    SDL_Point p2Pos = player2->getPosition();
+
+    int distance = std::abs(p1Pos.x - p2Pos.x);
+    int playerSize = settings->playerSize;
+
+    bool p2FacingP1 =
+        (player2->getDirection() == Direction::RIGHT && p2Pos.x < p1Pos.x) ||
+        (player2->getDirection() == Direction::LEFT && p2Pos.x > p1Pos.x);
+
+    bool verticallyAligned =
+        !(p1Hitbox.y + p1Hitbox.h < p2Hitbox.y + p2Hitbox.h / 2 ||
+          p1Hitbox.y > p2Hitbox.y + p2Hitbox.h - p2Hitbox.h / 2);
+
+    if (p2FacingP1 && distance <= playerSize * 0.8f && verticallyAligned) {
+      player1->takeDamage(character2->damages);
+      player2->performAttack();
+    }
+  }
 }
+
+void GameplayState::onExit(Game *game) {}
 
 void GameplayState::handleEvent(const SDL_Event &event, Game *game) {
   if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
     if (!finished) {
-      Uint32 pauseStart = SDL_GetTicks();
       game->pushState(std::make_unique<PauseState>());
-      pausedTime += SDL_GetTicks() - pauseStart;
     } else {
       game->changeState(std::make_unique<MenuState>());
     }
@@ -65,53 +93,44 @@ void GameplayState::handleEvent(const SDL_Event &event, Game *game) {
 }
 
 void GameplayState::update(float deltaTime, Game *game) {
+  Uint32 currentTime = SDL_GetTicks();
+  // If more than 100ms passed since last update, assume we were paused
+  if (currentTime - lastUpdateTime > 100) {
+    pausedTime += (currentTime - lastUpdateTime);
+  }
+  lastUpdateTime = currentTime;
+
   if (finished)
     return;
 
-  Settings *settings = game->getSettings();
-  InputManager *inputManager = game->getInputManager();
-
-  // Handle player input
-  player1->handleInput(inputManager->getPlayer1Input());
-  player2->handleInput(inputManager->getPlayer2Input());
-
-  // Update players
-  int baseHeight = game->getHeight() * 9 / 10;
-  player1->update(deltaTime, baseHeight, game->getWidth());
-  player2->update(deltaTime, baseHeight, game->getWidth());
-
-  // Check for attacks
-  checkCollisions();
-
-  // Animate life at start
-  if (!lifeInitialized) {
-    float p1Life = player1->getLife();
-    float p2Life = player2->getLife();
-
-    p1Life *= 1.1f;
-    p2Life *= 1.1f;
-
-    if (p1Life > settings->initialLife)
-      p1Life = settings->initialLife;
-    if (p2Life > settings->initialLife)
-      p2Life = settings->initialLife;
-
-    player1->setLife(p1Life);
-    player2->setLife(p2Life);
-
-    if (p1Life >= settings->initialLife && p2Life >= settings->initialLife) {
-      lifeInitialized = true;
-    }
+  // Update Shake
+  if (shakeTimer > 0) {
+    shakeTimer -= deltaTime;
+    if (shakeTimer < 0)
+      shakeTimer = 0;
   }
 
-  // Check win condition
+  // Update Input
+  game->getInputManager()->update();
+  player1->handleInput(game->getInputManager()->getPlayer1Input());
+  player2->handleInput(game->getInputManager()->getPlayer2Input());
+
+  // Update Players
+  int groundHeight = game->getHeight() - 100;
+  player1->update(deltaTime, groundHeight, game->getWidth());
+  player2->update(deltaTime, groundHeight, game->getWidth());
+
+  // Check Collisions
+  checkCollisions();
+
+  // Check Win Condition
   checkWinCondition(game);
 }
 
 void GameplayState::checkCollisions() {
   // Player 1 attacking Player 2
-  if (player1->canAttack() && player1->getLife() > 0 &&
-      player2->getLife() > 0) {
+  if (player1->getWantedAttack() && player1->canAttack() &&
+      player1->getLife() > 0 && player2->getLife() > 0) {
     SDL_Rect p1Hitbox = player1->getHitbox();
     SDL_Rect p2Hitbox = player2->getHitbox();
 
@@ -134,19 +153,23 @@ void GameplayState::checkCollisions() {
     if (p1FacingP2 && distance <= playerSize * 0.8f && verticallyAligned) {
       player2->takeDamage(character1->damages);
       player1->performAttack();
+
+      // Trigger Shake
+      shakeTimer = 0.2f;
+      shakeMagnitude = 5.0f;
     }
   }
 
   // Player 2 attacking Player 1
-  if (player2->canAttack() && player2->getLife() > 0 &&
-      player1->getLife() > 0) {
-    SDL_Rect p1Hitbox = player1->getHitbox();
+  if (player2->getWantedAttack() && player2->canAttack() &&
+      player2->getLife() > 0 && player1->getLife() > 0) {
     SDL_Rect p2Hitbox = player2->getHitbox();
+    SDL_Rect p1Hitbox = player1->getHitbox();
 
-    SDL_Point p1Pos = player1->getPosition();
     SDL_Point p2Pos = player2->getPosition();
+    SDL_Point p1Pos = player1->getPosition();
 
-    int distance = std::abs(p1Pos.x - p2Pos.x);
+    int distance = std::abs(p2Pos.x - p1Pos.x);
     int playerSize = settings->playerSize;
 
     bool p2FacingP1 =
@@ -160,6 +183,10 @@ void GameplayState::checkCollisions() {
     if (p2FacingP1 && distance <= playerSize * 0.8f && verticallyAligned) {
       player1->takeDamage(character2->damages);
       player2->performAttack();
+
+      // Trigger Shake
+      shakeTimer = 0.2f;
+      shakeMagnitude = 5.0f;
     }
   }
 }
@@ -196,8 +223,13 @@ void GameplayState::render(SDL_Renderer *renderer, Game *game) {
   HUD hud;
   TTF_Font *font =
       game->getResourceManager()->loadFont("assets/Fonts/Alien.ttf", 50);
-  hud.render(renderer, font, player1.get(), player2.get(), timeRemaining,
-             game->getWidth(), game->getHeight());
+
+  if (!font) {
+    printf("ERROR: Failed to load font assets/Fonts/Alien.ttf\n");
+  } else {
+    hud.render(renderer, font, player1.get(), player2.get(), timeRemaining,
+               game->getWidth(), game->getHeight());
+  }
 
   // Render "FIGHT!" at the start
   if (lifeInitialized && elapsedTime < 2) {
