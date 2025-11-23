@@ -21,7 +21,7 @@ void SettingsState::onEnter(Game *game) {
   auto menuButton =
       std::make_unique<Button>(0, screenHeight - 90, 400, 90, "Back");
   menuButton->setCallback([game]() {
-    game->getSettings()->saveToFile("assets/Settings.txt");
+    game->getSettings()->saveToFile("assets/Settings.json");
     game->popState();
   });
   buttons.push_back(std::move(menuButton));
@@ -81,7 +81,7 @@ void SettingsState::onEnter(Game *game) {
 
 void SettingsState::handleEvent(const SDL_Event &event, Game *game) {
   if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-    game->getSettings()->saveToFile("assets/Settings.txt");
+    game->getSettings()->saveToFile("assets/Settings.json");
     game->popState();
     return;
   }

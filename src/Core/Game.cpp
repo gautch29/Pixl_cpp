@@ -70,7 +70,7 @@ bool Game::initialize() {
   settings = std::make_unique<Settings>();
 
   // Load settings
-  if (!settings->loadFromFile("assets/Settings.txt")) {
+  if (!settings->loadFromFile("assets/Settings.json")) {
     std::cerr << "Warning: Could not load settings, using defaults"
               << std::endl;
   }
