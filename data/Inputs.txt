@@ -1,0 +1,12 @@
+player1_up = z
+player1_left = q
+player1_down = s
+player1_right = d
+player1_attack = a
+player1_secondary = e
+player2_up = o
+player2_left = k
+player2_down = l
+player2_right = m
+player2_attack = i
+player2_secondary = p

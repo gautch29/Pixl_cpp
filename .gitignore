@@ -1,0 +1,15 @@
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+.DS_Store
+.vscode/
+.idea/
+cmake-build-*/
+*.user
+*.suo
+*.sln
+*.vcxproj*

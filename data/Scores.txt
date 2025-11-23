@@ -1,0 +1,2 @@
+score player1 : 0
+score player2 : 0

@@ -1,0 +1,12 @@
+name = Slash
+ID = 2
+speed = 15
+jumpspeed = 20
+delayStand = 150
+delayRun = 50
+delayJump = 190
+delayAttack = 50
+staminaRecupSpeed = 0.1
+staminaHit = 10
+delayHit = 500
+damages = 5

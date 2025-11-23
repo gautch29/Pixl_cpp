@@ -1,0 +1,10 @@
+stand_images = 4
+run_images = 8
+jump_images = 6
+attack_images = 6
+player_size = 400
+hitbox = false
+input = keyboard
+echelle = 1.66
+game_time = 180
+time = day
