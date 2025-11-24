@@ -11,72 +11,92 @@ SettingsState::~SettingsState() {}
 
 void SettingsState::onEnter(Game *game) {
   background = game->getResourceManager()->loadTexture(
-      "assets/Backgrounds/Settings/0.png");
+      "assets/Backgrounds/Settings_BG.png");
 
   int screenWidth = game->getWidth();
   int screenHeight = game->getHeight();
-  int ecart = 60;
+  int centerX = screenWidth / 2;
+  int centerY = screenHeight / 2;
+  int buttonWidth = 200;
+  int buttonHeight = 50;
+  int spacing = 20;
 
   // Back to menu button
-  auto menuButton =
-      std::make_unique<Button>(0, screenHeight - 90, 400, 90, "Back");
+  auto menuButton = std::make_unique<Button>(50, 50, 150, 50, "BACK");
   menuButton->setCallback([game]() {
     game->getSettings()->saveToFile("assets/Settings.json");
     game->popState();
   });
+  menuButton->setColors({0, 0, 0, 150}, {255, 50, 50, 50},
+                        {255, 255, 255, 255});
   buttons.push_back(std::move(menuButton));
 
+  // --- Settings Controls ---
+  int startY = centerY - 100;
+  int labelX = centerX - 300;
+  int controlX = centerX + 50;
+
   // Toggle hitbox button
-  auto hitboxButton = std::make_unique<Button>(screenWidth * 3 / 4 - 60,
-                                               screenHeight / 2 - ecart - 20,
-                                               120, 40, "Hitbox");
+  auto hitboxButton = std::make_unique<Button>(controlX, startY, buttonWidth,
+                                               buttonHeight, "TOGGLE");
   hitboxButton->setCallback(
       [game]() { game->getSettings()->hitbox = !game->getSettings()->hitbox; });
+  hitboxButton->setColors({0, 0, 0, 150}, {0, 255, 255, 50},
+                          {255, 255, 255, 255});
   buttons.push_back(std::move(hitboxButton));
 
   // Toggle day/night button
-  auto timeButton = std::make_unique<Button>(
-      screenWidth * 3 / 4 - 60, screenHeight / 2 - 20, 120, 40, "Time");
+  auto timeButton =
+      std::make_unique<Button>(controlX, startY + buttonHeight + spacing,
+                               buttonWidth, buttonHeight, "SWITCH");
   timeButton->setCallback([game]() {
     auto settings = game->getSettings();
     settings->time = (settings->time == "day") ? "night" : "day";
   });
+  timeButton->setColors({0, 0, 0, 150}, {255, 0, 255, 50},
+                        {255, 255, 255, 255});
   buttons.push_back(std::move(timeButton));
 
   // Game time adjustment buttons
-  auto plusMinuteButton = std::make_unique<Button>(
-      screenWidth * 3 / 4 + 100, screenHeight / 2 - 2 * ecart - 20, 60, 40,
-      "+60");
-  plusMinuteButton->setCallback(
-      [game]() { game->getSettings()->gameTime += 60; });
-  buttons.push_back(std::move(plusMinuteButton));
+  int timeY = startY + (buttonHeight + spacing) * 2;
 
-  auto plusSecondButton =
-      std::make_unique<Button>(screenWidth * 3 / 4 + 60,
-                               screenHeight / 2 - 2 * ecart - 20, 40, 40, "+1");
-  plusSecondButton->setCallback(
-      [game]() { game->getSettings()->gameTime += 1; });
-  buttons.push_back(std::move(plusSecondButton));
-
-  auto minusMinuteButton = std::make_unique<Button>(
-      screenWidth * 3 / 4 - 160, screenHeight / 2 - 2 * ecart - 20, 60, 40,
-      "-60");
+  auto minusMinuteButton =
+      std::make_unique<Button>(controlX, timeY, 50, buttonHeight, "-60");
   minusMinuteButton->setCallback([game]() {
     if (game->getSettings()->gameTime > 60) {
       game->getSettings()->gameTime -= 60;
     }
   });
+  minusMinuteButton->setColors({0, 0, 0, 150}, {255, 50, 50, 50},
+                               {255, 255, 255, 255});
   buttons.push_back(std::move(minusMinuteButton));
 
   auto minusSecondButton =
-      std::make_unique<Button>(screenWidth * 3 / 4 - 100,
-                               screenHeight / 2 - 2 * ecart - 20, 40, 40, "-1");
+      std::make_unique<Button>(controlX + 60, timeY, 40, buttonHeight, "-1");
   minusSecondButton->setCallback([game]() {
     if (game->getSettings()->gameTime > 1) {
       game->getSettings()->gameTime -= 1;
     }
   });
+  minusSecondButton->setColors({0, 0, 0, 150}, {255, 50, 50, 50},
+                               {255, 255, 255, 255});
   buttons.push_back(std::move(minusSecondButton));
+
+  auto plusSecondButton =
+      std::make_unique<Button>(controlX + 110, timeY, 40, buttonHeight, "+1");
+  plusSecondButton->setCallback(
+      [game]() { game->getSettings()->gameTime += 1; });
+  plusSecondButton->setColors({0, 0, 0, 150}, {0, 255, 0, 50},
+                              {255, 255, 255, 255});
+  buttons.push_back(std::move(plusSecondButton));
+
+  auto plusMinuteButton =
+      std::make_unique<Button>(controlX + 160, timeY, 50, buttonHeight, "+60");
+  plusMinuteButton->setCallback(
+      [game]() { game->getSettings()->gameTime += 60; });
+  plusMinuteButton->setColors({0, 0, 0, 150}, {0, 255, 0, 50},
+                              {255, 255, 255, 255});
+  buttons.push_back(std::move(plusMinuteButton));
 }
 
 void SettingsState::handleEvent(const SDL_Event &event, Game *game) {
@@ -121,57 +141,104 @@ void SettingsState::render(SDL_Renderer *renderer, Game *game) {
   // Render current settings values
   Settings *settings = game->getSettings();
   SDL_Color white = {255, 255, 255, 255};
+  SDL_Color cyan = {0, 255, 255, 255};
+  SDL_Color magenta = {255, 0, 255, 255};
 
-  // Render Hitbox state
+  int centerX = game->getWidth() / 2;
+  int centerY = game->getHeight() / 2;
+  int startY = centerY - 100;
+  int labelX = centerX - 300;
+  int buttonHeight = 50;
+  int spacing = 20;
+
+  // Render Hitbox Label
+  SDL_Surface *hitboxLabelSurf = TTF_RenderText_Blended(font, "HITBOXES", cyan);
+  if (hitboxLabelSurf) {
+    SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, hitboxLabelSurf);
+    SDL_Rect rect = {labelX, startY + (buttonHeight - hitboxLabelSurf->h) / 2,
+                     hitboxLabelSurf->w, hitboxLabelSurf->h};
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(hitboxLabelSurf);
+  }
+
+  // Render Hitbox Value
   std::string hitboxText = settings->hitbox ? "ON" : "OFF";
-  SDL_Surface *hitboxSurface =
+  SDL_Surface *hitboxValSurf =
       TTF_RenderText_Blended(font, hitboxText.c_str(), white);
-  if (hitboxSurface) {
-    SDL_Texture *texture =
-        SDL_CreateTextureFromSurface(renderer, hitboxSurface);
-    if (texture) {
-      SDL_Rect rect = {game->getWidth() * 3 / 4 + 70,
-                       game->getHeight() / 2 - 60 - 20 + 10, hitboxSurface->w,
-                       hitboxSurface->h};
-      SDL_RenderCopy(renderer, texture, nullptr, &rect);
-      SDL_DestroyTexture(texture);
-    }
-    SDL_FreeSurface(hitboxSurface);
+  if (hitboxValSurf) {
+    SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, hitboxValSurf);
+    SDL_Rect rect = {centerX + 270,
+                     startY + (buttonHeight - hitboxValSurf->h) / 2,
+                     hitboxValSurf->w, hitboxValSurf->h};
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(hitboxValSurf);
   }
 
-  // Render Time state
-  std::string timeStateText = (settings->time == "day") ? "Day" : "Night";
-  SDL_Surface *timeStateSurface =
+  // Render Time Label
+  SDL_Surface *timeLabelSurf =
+      TTF_RenderText_Blended(font, "TIME OF DAY", magenta);
+  if (timeLabelSurf) {
+    SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, timeLabelSurf);
+    SDL_Rect rect = {labelX,
+                     startY + buttonHeight + spacing +
+                         (buttonHeight - timeLabelSurf->h) / 2,
+                     timeLabelSurf->w, timeLabelSurf->h};
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(timeLabelSurf);
+  }
+
+  // Render Time Value
+  std::string timeStateText = (settings->time == "day") ? "DAY" : "NIGHT";
+  SDL_Surface *timeValSurf =
       TTF_RenderText_Blended(font, timeStateText.c_str(), white);
-  if (timeStateSurface) {
-    SDL_Texture *texture =
-        SDL_CreateTextureFromSurface(renderer, timeStateSurface);
-    if (texture) {
-      SDL_Rect rect = {game->getWidth() * 3 / 4 + 70,
-                       game->getHeight() / 2 - 20 + 10, timeStateSurface->w,
-                       timeStateSurface->h};
-      SDL_RenderCopy(renderer, texture, nullptr, &rect);
-      SDL_DestroyTexture(texture);
-    }
-    SDL_FreeSurface(timeStateSurface);
+  if (timeValSurf) {
+    SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, timeValSurf);
+    SDL_Rect rect = {centerX + 270,
+                     startY + buttonHeight + spacing +
+                         (buttonHeight - timeValSurf->h) / 2,
+                     timeValSurf->w, timeValSurf->h};
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(timeValSurf);
   }
 
-  // Render game time
+  // Render Game Time Label
+  SDL_Surface *gameTimeLabelSurf =
+      TTF_RenderText_Blended(font, "ROUND TIME", white);
+  if (gameTimeLabelSurf) {
+    SDL_Texture *tex =
+        SDL_CreateTextureFromSurface(renderer, gameTimeLabelSurf);
+    SDL_Rect rect = {labelX,
+                     startY + (buttonHeight + spacing) * 2 +
+                         (buttonHeight - gameTimeLabelSurf->h) / 2,
+                     gameTimeLabelSurf->w, gameTimeLabelSurf->h};
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+    SDL_DestroyTexture(tex);
+    SDL_FreeSurface(gameTimeLabelSurf);
+  }
+
+  // Render Game Time Value
   int minutes = settings->gameTime / 60;
   int seconds = settings->gameTime % 60;
   std::string timeText = std::to_string(minutes) + ":" +
                          (seconds < 10 ? "0" : "") + std::to_string(seconds);
 
-  SDL_Surface *surface = TTF_RenderText_Blended(font, timeText.c_str(), white);
-  if (surface) {
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+  SDL_Surface *gameTimeValSurf =
+      TTF_RenderText_Blended(font, timeText.c_str(), white);
+  if (gameTimeValSurf) {
+    SDL_Texture *texture =
+        SDL_CreateTextureFromSurface(renderer, gameTimeValSurf);
     if (texture) {
-      SDL_Rect rect = {game->getWidth() * 3 / 4 - 30,
-                       game->getHeight() / 2 - 120 - 20, surface->w,
-                       surface->h};
+      SDL_Rect rect = {centerX + 270,
+                       startY + (buttonHeight + spacing) * 2 +
+                           (buttonHeight - gameTimeValSurf->h) / 2,
+                       gameTimeValSurf->w, gameTimeValSurf->h};
       SDL_RenderCopy(renderer, texture, nullptr, &rect);
       SDL_DestroyTexture(texture);
     }
-    SDL_FreeSurface(surface);
+    SDL_FreeSurface(gameTimeValSurf);
   }
 }

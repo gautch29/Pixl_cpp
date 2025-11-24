@@ -60,19 +60,52 @@ include(FetchContent)
 FetchContent_Declare(
   nlohmann_json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.2
+  GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-# Copy assets to build directory
-add_custom_command(TARGET PixL POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PixL>/assets
-)
+# Link nlohmann_json to the executable
+target_link_libraries(PixL nlohmann_json::nlohmann_json)
+
+# Copy assets to build directory (for app bundle, this goes to Resources)
+if(APPLE)
+    add_custom_command(TARGET PixL POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PixL>/../Resources/assets
+    )
+else()
+    add_custom_command(TARGET PixL POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:PixL>/assets
+    )
+endif()
 
 # Platform-specific settings
 if(APPLE)
     target_compile_options(PixL PRIVATE -Wall -Wextra)
+    
+    # macOS App Bundle configuration
+    set_target_properties(PixL PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.pixl.game"
+        MACOSX_BUNDLE_BUNDLE_NAME "PixL"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_INFO_STRING "PixL - 2D Fighting Game"
+    )
+    
+    # Set app icon if it exists
+    if(EXISTS "${CMAKE_SOURCE_DIR}/assets/Icon/AppIcon.icns")
+        set_target_properties(PixL PROPERTIES
+            MACOSX_BUNDLE_ICON_FILE AppIcon.icns
+        )
+        # Copy icon to Resources folder in app bundle
+        set_source_files_properties("${CMAKE_SOURCE_DIR}/assets/Icon/AppIcon.icns"
+            PROPERTIES MACOSX_PACKAGE_LOCATION "Resources"
+        )
+        target_sources(PixL PRIVATE "${CMAKE_SOURCE_DIR}/assets/Icon/AppIcon.icns")
+    endif()
+    
 elseif(WIN32)
     target_compile_options(PixL PRIVATE /W4)
     # For Windows, we might need to copy SDL2 DLLs

@@ -28,4 +28,16 @@ private:
   SDL_Color normalColor;
   SDL_Color hoverColor;
   SDL_Color textColor;
+
+  // New visual properties
+  SDL_Texture *normalTexture = nullptr;
+  SDL_Texture *hoverTexture = nullptr;
+  bool useTexture = false;
+  bool centerText = true;
+  float currentScale = 1.0f;
+
+public:
+  void setTextures(SDL_Texture *normal, SDL_Texture *hover);
+  void setColors(SDL_Color normal, SDL_Color hover, SDL_Color text);
+  void setAlignment(bool center) { centerText = center; }
 };

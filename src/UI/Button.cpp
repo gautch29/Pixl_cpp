@@ -10,14 +10,21 @@ Button::Button(int x, int y, int width, int height, const std::string &text)
 }
 
 void Button::render(SDL_Renderer *renderer, TTF_Font *font, bool hovered) {
-  // Draw button background
-  SDL_Color bgColor = hovered ? hoverColor : normalColor;
-  SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-  SDL_RenderFillRect(renderer, &rect);
+  if (useTexture && normalTexture) {
+    // Render texture
+    SDL_Texture *tex = (hovered && hoverTexture) ? hoverTexture : normalTexture;
+    SDL_RenderCopy(renderer, tex, nullptr, &rect);
+  } else {
+    // Draw button background
+    SDL_Color bgColor = hovered ? hoverColor : normalColor;
+    SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b,
+                           bgColor.a);
+    SDL_RenderFillRect(renderer, &rect);
 
-  // Draw button border
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderDrawRect(renderer, &rect);
+    // Draw button border
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderDrawRect(renderer, &rect);
+  }
 
   // Render text
   if (font && !text.empty()) {
@@ -28,14 +35,33 @@ void Button::render(SDL_Renderer *renderer, TTF_Font *font, bool hovered) {
       if (texture) {
         int textW = surface->w;
         int textH = surface->h;
-        SDL_Rect textRect = {rect.x + (rect.w - textW) / 2,
-                             rect.y + (rect.h - textH) / 2, textW, textH};
+
+        int textX = rect.x + (rect.w - textW) / 2;
+        if (!centerText) {
+          textX = rect.x + 20; // Left padding
+        }
+
+        SDL_Rect textRect = {textX, rect.y + (rect.h - textH) / 2, textW,
+                             textH};
         SDL_RenderCopy(renderer, texture, nullptr, &textRect);
         SDL_DestroyTexture(texture);
       }
       SDL_FreeSurface(surface);
     }
   }
+}
+
+void Button::setTextures(SDL_Texture *normal, SDL_Texture *hover) {
+  normalTexture = normal;
+  hoverTexture = hover;
+  useTexture = true;
+}
+
+void Button::setColors(SDL_Color normal, SDL_Color hover, SDL_Color text) {
+  normalColor = normal;
+  hoverColor = hover;
+  textColor = text;
+  useTexture = false;
 }
 
 bool Button::contains(int mouseX, int mouseY) const {

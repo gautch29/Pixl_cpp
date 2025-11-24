@@ -15,7 +15,7 @@ void MenuState::onEnter(Game *game) {
   printf("MenuState::onEnter\n");
   // Load background
   background =
-      game->getResourceManager()->loadTexture("assets/Backgrounds/Menu/0.png");
+      game->getResourceManager()->loadTexture("assets/Backgrounds/Menu_BG.png");
 
   if (!background)
     printf("Failed to load Menu background\n");
@@ -30,31 +30,36 @@ void MenuState::onEnter(Game *game) {
   if (!font)
     printf("Failed to load Menu font\n");
 
-  int centerX = game->getWidth() / 2;
-  int centerY = game->getHeight() / 2;
+  int buttonWidth = 400;
+  int buttonHeight = 60;
+  int startY = screenHeight / 2;
+  int spacing = 20;
 
   // Create menu buttons
   auto playButton =
-      std::make_unique<Button>(0, 0, screenWidth / 4, screenHeight / 4, "Play");
+      std::make_unique<Button>((screenWidth - buttonWidth) / 2, startY,
+                               buttonWidth, buttonHeight, "PLAY");
   playButton->setCallback(
       [game]() { game->pushState(std::make_unique<CharacterSelectState>()); });
+  playButton->setColors({0, 0, 0, 150}, {0, 255, 255, 50},
+                        {255, 255, 255, 255});
   buttons.push_back(std::move(playButton));
 
   auto settingsButton = std::make_unique<Button>(
-      0, screenHeight / 4, screenWidth / 4, screenHeight / 4, "Settings");
+      (screenWidth - buttonWidth) / 2, startY + buttonHeight + spacing,
+      buttonWidth, buttonHeight, "SETTINGS");
   settingsButton->setCallback(
       [game]() { game->pushState(std::make_unique<SettingsState>()); });
+  settingsButton->setColors({0, 0, 0, 150}, {255, 0, 255, 50},
+                            {255, 255, 255, 255});
   buttons.push_back(std::move(settingsButton));
 
-  auto charactersButton = std::make_unique<Button>(
-      0, screenHeight / 2, screenWidth / 4, screenHeight / 4, "Characters");
-  charactersButton->setCallback(
-      [game]() { game->pushState(std::make_unique<CharacterSelectState>()); });
-  buttons.push_back(std::move(charactersButton));
-
   auto exitButton = std::make_unique<Button>(
-      0, screenHeight * 3 / 4, screenWidth / 4, screenHeight / 4, "Exit");
+      (screenWidth - buttonWidth) / 2, startY + (buttonHeight + spacing) * 2,
+      buttonWidth, buttonHeight, "EXIT");
   exitButton->setCallback([game]() { game->quit(); });
+  exitButton->setColors({0, 0, 0, 150}, {255, 50, 50, 50},
+                        {255, 255, 255, 255});
   buttons.push_back(std::move(exitButton));
 }
 

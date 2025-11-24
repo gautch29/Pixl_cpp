@@ -20,7 +20,7 @@ CharacterSelectState::~CharacterSelectState() {
 void CharacterSelectState::onEnter(Game *game) {
   printf("CharacterSelectState::onEnter\n");
   background = game->getResourceManager()->loadTexture(
-      "assets/Backgrounds/Settings/0.png");
+      "assets/Backgrounds/CharSelect_BG.png");
 
   // Get available characters from Game
   const auto &gameCharacters = game->getCharacters();
@@ -37,17 +37,19 @@ void CharacterSelectState::onEnter(Game *game) {
 
   int screenWidth = game->getWidth();
   int screenHeight = game->getHeight();
-  int profileSize = 100;
+  int profileSize = 120;
+  int spacing = 30;
 
   // Back button
-  auto backButton =
-      std::make_unique<Button>(0, screenHeight - 90, 400, 90, "Back");
+  auto backButton = std::make_unique<Button>(50, 50, 150, 50, "BACK");
   backButton->setCallback([game]() { game->popState(); });
+  backButton->setColors({0, 0, 0, 150}, {255, 50, 50, 50},
+                        {255, 255, 255, 255});
   buttons.push_back(std::move(backButton));
 
   // Start game button
   auto startButton = std::make_unique<Button>(
-      screenWidth / 2 - 100, screenHeight - 90, 200, 90, "Fight!");
+      screenWidth / 2 - 150, screenHeight - 120, 300, 80, "FIGHT!");
   startButton->setCallback([this, game]() {
     printf("Fight button clicked\n");
     if (player1Character && player2Character) {
@@ -59,27 +61,41 @@ void CharacterSelectState::onEnter(Game *game) {
       printf("Cannot start: P1 or P2 character is null\n");
     }
   });
+  startButton->setColors({0, 0, 0, 150}, {255, 0, 0, 100},
+                         {255, 255, 255, 255});
   buttons.push_back(std::move(startButton));
 
   // Character selection buttons for player 1
+  int p1StartX = screenWidth / 4 -
+                 (availableCharacters.size() * (profileSize + spacing)) / 2;
+  int p1StartY = screenHeight / 2;
+
   for (size_t i = 0; i < availableCharacters.size(); i++) {
-    int x = screenWidth / 8 + i * (profileSize + 20);
-    int y = screenHeight / 4 + screenHeight / 10;
+    int x = p1StartX + i * (profileSize + spacing);
+    int y = p1StartY;
 
     auto button = std::make_unique<Button>(x, y, profileSize, profileSize, "");
     Character *character = availableCharacters[i];
     button->setCallback([this, character]() { player1Character = character; });
+    button->setColors({0, 0, 0, 0}, {0, 255, 255, 50},
+                      {0, 0, 0, 0}); // Transparent normal, cyan hover
     buttons.push_back(std::move(button));
   }
 
   // Character selection buttons for player 2
+  int p2StartX = screenWidth * 3 / 4 -
+                 (availableCharacters.size() * (profileSize + spacing)) / 2;
+  int p2StartY = screenHeight / 2;
+
   for (size_t i = 0; i < availableCharacters.size(); i++) {
-    int x = screenWidth / 8 + screenWidth / 2 + i * (profileSize + 20);
-    int y = screenHeight / 4 + screenHeight / 10;
+    int x = p2StartX + i * (profileSize + spacing);
+    int y = p2StartY;
 
     auto button = std::make_unique<Button>(x, y, profileSize, profileSize, "");
     Character *character = availableCharacters[i];
     button->setCallback([this, character]() { player2Character = character; });
+    button->setColors({0, 0, 0, 0}, {255, 0, 255, 50},
+                      {0, 0, 0, 0}); // Transparent normal, magenta hover
     buttons.push_back(std::move(button));
   }
 }
@@ -116,21 +132,46 @@ void CharacterSelectState::render(SDL_Renderer *renderer, Game *game) {
   SDL_Color white = {255, 255, 255, 255};
 
   // Render "Player 1" and "Player 2" titles
-  SDL_Surface *p1Surface = TTF_RenderText_Blended(font, "Player 1", white);
+  SDL_Color cyan = {0, 255, 255, 255};
+  SDL_Color magenta = {255, 0, 255, 255};
+
+  // Grid Layout Settings
+  int profileSize = 150; // Increased size to fill slots
+  int cols = 2;
+
+  // P1 Grid Start - Adjusted based on screenshot
+  // Slots appear to be roughly at 13% and 31% width
+  int p1StartX = game->getWidth() * 0.135;
+  int p1StartY = game->getHeight() * 0.38;
+  int p1GapX = game->getWidth() * 0.185; // Distance between columns
+  int p1GapY = game->getHeight() * 0.27; // Distance between rows
+
+  // P2 Grid Start - Symmetric to P1
+  // Slots appear to be roughly at 58% and 76% width
+  int p2StartX = game->getWidth() * 0.585;
+  int p2StartY = game->getHeight() * 0.38;
+  int p2GapX = game->getWidth() * 0.185;
+  int p2GapY = game->getHeight() * 0.27;
+
+  // P1 Header
+  SDL_Surface *p1Surface = TTF_RenderText_Blended(font, "PLAYER 1", cyan);
   if (p1Surface) {
     SDL_Texture *p1Texture = SDL_CreateTextureFromSurface(renderer, p1Surface);
     SDL_Rect p1Rect = {game->getWidth() / 4 - p1Surface->w / 2,
-                       game->getHeight() / 4, p1Surface->w, p1Surface->h};
+                       static_cast<int>(game->getHeight() * 0.20), p1Surface->w,
+                       p1Surface->h};
     SDL_RenderCopy(renderer, p1Texture, nullptr, &p1Rect);
     SDL_DestroyTexture(p1Texture);
     SDL_FreeSurface(p1Surface);
   }
 
-  SDL_Surface *p2Surface = TTF_RenderText_Blended(font, "Player 2", white);
+  // P2 Header
+  SDL_Surface *p2Surface = TTF_RenderText_Blended(font, "PLAYER 2", magenta);
   if (p2Surface) {
     SDL_Texture *p2Texture = SDL_CreateTextureFromSurface(renderer, p2Surface);
     SDL_Rect p2Rect = {game->getWidth() * 3 / 4 - p2Surface->w / 2,
-                       game->getHeight() / 4, p2Surface->w, p2Surface->h};
+                       static_cast<int>(game->getHeight() * 0.20), p2Surface->w,
+                       p2Surface->h};
     SDL_RenderCopy(renderer, p2Texture, nullptr, &p2Rect);
     SDL_DestroyTexture(p2Texture);
     SDL_FreeSurface(p2Surface);
@@ -148,38 +189,44 @@ void CharacterSelectState::render(SDL_Renderer *renderer, Game *game) {
   }
 
   // Render character portraits
-  int profileSize = 100;
   for (size_t i = 0; i < availableCharacters.size(); i++) {
     Character *character = availableCharacters[i];
     if (character->profilePicture) {
+      int row = i / cols;
+      int col = i % cols;
+
       // Player 1 portraits
-      SDL_Rect p1Rect = {game->getWidth() / 8 +
-                             static_cast<int>(i) * (profileSize + 20),
-                         game->getHeight() / 4 + game->getHeight() / 10,
-                         profileSize, profileSize};
+      int p1X = p1StartX + col * p1GapX;
+      int p1Y = p1StartY + row * p1GapY;
+      SDL_Rect p1Rect = {p1X, p1Y, profileSize, profileSize};
       SDL_RenderCopy(renderer, character->profilePicture, nullptr, &p1Rect);
 
       // Highlight selected P1 character
       if (player1Character == character) {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border
-        SDL_Rect border = {p1Rect.x - 2, p1Rect.y - 2, p1Rect.w + 4,
-                           p1Rect.h + 4};
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255); // Cyan border
+        SDL_Rect border = {p1Rect.x - 4, p1Rect.y - 4, p1Rect.w + 8,
+                           p1Rect.h + 8};
         SDL_RenderDrawRect(renderer, &border);
+        SDL_Rect border2 = {p1Rect.x - 3, p1Rect.y - 3, p1Rect.w + 6,
+                            p1Rect.h + 6};
+        SDL_RenderDrawRect(renderer, &border2);
       }
 
       // Player 2 portraits
-      SDL_Rect p2Rect = {game->getWidth() / 8 + game->getWidth() / 2 +
-                             static_cast<int>(i) * (profileSize + 20),
-                         game->getHeight() / 4 + game->getHeight() / 10,
-                         profileSize, profileSize};
+      int p2X = p2StartX + col * p2GapX;
+      int p2Y = p2StartY + row * p2GapY;
+      SDL_Rect p2Rect = {p2X, p2Y, profileSize, profileSize};
       SDL_RenderCopy(renderer, character->profilePicture, nullptr, &p2Rect);
 
       // Highlight selected P2 character
       if (player2Character == character) {
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green border
-        SDL_Rect border = {p2Rect.x - 2, p2Rect.y - 2, p2Rect.w + 4,
-                           p2Rect.h + 4};
+        SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255); // Magenta border
+        SDL_Rect border = {p2Rect.x - 4, p2Rect.y - 4, p2Rect.w + 8,
+                           p2Rect.h + 8};
         SDL_RenderDrawRect(renderer, &border);
+        SDL_Rect border2 = {p2Rect.x - 3, p2Rect.y - 3, p2Rect.w + 6,
+                            p2Rect.h + 6};
+        SDL_RenderDrawRect(renderer, &border2);
       }
     }
   }

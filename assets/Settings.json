@@ -1,0 +1,15 @@
+{
+    "standImages": 4,
+    "runImages": 8,
+    "jumpImages": 6,
+    "attackImages": 6,
+    "playerSize": 400,
+    "hitbox": false,
+    "input": "keyboard",
+    "scale": 1.66,
+    "gameTime": 180,
+    "time": "day",
+    "initialLife": 100,
+    "initialStamina": 100,
+    "initialFall": 300
+}
